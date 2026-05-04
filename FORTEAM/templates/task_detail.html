@@ -1,0 +1,244 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ task.title }} – 4TEAM{% endblock %}
+
+{% block extra_head %}
+<style>
+    .task-detail-wrapper {
+        max-width: 800px;
+        margin: 2rem auto;
+    }
+    .card-detail {
+        background: var(--nude-surface);
+        border: 1px solid var(--nude-border);
+        border-radius: 16px;
+        padding: 2rem;
+        margin-bottom: 2rem;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.02);
+    }
+    .task-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        flex-wrap: wrap;
+        gap: 1rem;
+    }
+    .task-title-detail {
+        font-size: 1.8rem;
+        font-weight: 300;
+        color: var(--nude-text);
+        margin-bottom: 0.75rem;
+    }
+    .badge-status {
+        font-size: 0.85rem;
+        padding: 0.3em 0.8em;
+        border-radius: 20px;
+        font-weight: 500;
+    }
+    .status-todo { background: #e8e4df; color: #5e5a55; }
+    .status-inprogress { background: #cbdce2; color: #2e4a55; }
+    .status-done { background: #b9ccb5; color: #3d4f3a; }
+
+    .priority-badge {
+        font-size: 0.8rem;
+        padding: 0.2em 0.7em;
+        border-radius: 20px;
+        font-weight: 500;
+        margin-left: 0.5rem;
+    }
+    .priority-low { background: #e8e4df; color: #5e5a55; }
+    .priority-medium { background: #dfd2be; color: #5e4d3a; }
+    .priority-high { background: #e0c4c4; color: #6b4242; }
+    .priority-critical { background: #e2b5b5; color: #6b2c2c; }
+
+    .task-meta {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 1.2rem;
+        margin-top: 1.2rem;
+        font-size: 0.9rem;
+        color: var(--nude-muted);
+    }
+    .task-meta i {
+        color: var(--nude-accent);
+        margin-right: 0.3rem;
+    }
+    .section-title {
+        font-weight: 500;
+        color: var(--nude-accent);
+        margin-top: 1.5rem;
+        margin-bottom: 0.5rem;
+        font-size: 1.2rem;
+    }
+    .btn-edit {
+        background: transparent;
+        border: 1px solid var(--nude-accent);
+        color: var(--nude-accent);
+        border-radius: 50px;
+        padding: 0.35rem 1.2rem;
+        text-decoration: none;
+        font-size: 0.85rem;
+        transition: all 0.2s;
+    }
+    .btn-edit:hover {
+        background: var(--nude-accent);
+        color: #fff;
+    }
+
+    /* Комментарии */
+    .comment {
+        background: var(--nude-soft);
+        border-radius: 12px;
+        padding: 1rem;
+        margin-bottom: 1rem;
+    }
+    .comment-header {
+        display: flex;
+        align-items: center;
+        margin-bottom: 0.5rem;
+        font-size: 0.9rem;
+        color: var(--nude-muted);
+    }
+    .comment-header i {
+        margin-right: 0.5rem;
+        color: var(--nude-accent);
+    }
+    .comment-body {
+        font-size: 0.95rem;
+        color: var(--nude-text);
+    }
+    .comment-form textarea {
+        border: 1px solid var(--nude-border);
+        border-radius: 10px;
+        padding: 0.75rem 1rem;
+        background: #fff;
+        width: 100%;
+        transition: border-color 0.2s;
+    }
+    .comment-form textarea:focus {
+        border-color: var(--nude-accent);
+        box-shadow: 0 0 0 0.15rem rgba(194, 165, 165, 0.25);
+    }
+    .btn-comment {
+        background: var(--nude-accent);
+        color: #fff;
+        border: none;
+        border-radius: 50px;
+        padding: 0.4rem 1.4rem;
+        font-size: 0.9rem;
+        transition: background 0.2s;
+    }
+    .btn-comment:hover {
+        background: var(--nude-accent-hover);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container">
+    <a href="{% url 'project_detail' task.project.pk %}" class="btn btn-sm btn-nude-outline mb-3">
+        <i class="bi bi-arrow-left me-1"></i> Назад к проекту
+    </a>
+    <div class="task-detail-wrapper">
+        <!-- Карточка задачи -->
+        <div class="card-detail">
+            <div class="task-header">
+                <div>
+                    <h1 class="task-title-detail">{{ task.title }}</h1>
+                    <span class="badge-status
+                        {% if task.status == 'TODO' %}status-todo
+                        {% elif task.status == 'IN_PROGRESS' %}status-inprogress
+                        {% elif task.status == 'DONE' %}status-done
+                        {% endif %}">
+                        {{ task.get_status_display }}
+                    </span>
+                    <span class="priority-badge
+                        {% if task.priority == 'LOW' %}priority-low
+                        {% elif task.priority == 'MEDIUM' %}priority-medium
+                        {% elif task.priority == 'HIGH' %}priority-high
+                        {% elif task.priority == 'CRITICAL' %}priority-critical
+                        {% endif %}">
+                        {{ task.get_priority_display }}
+                    </span>
+                </div>
+                {% if is_admin %}
+                    <a href="{% url 'task_edit' task.pk %}" class="btn-edit">
+                        <i class="bi bi-pencil-square me-1"></i> Редактировать
+                    </a>
+                {% endif %}
+            </div>
+
+            {% if task.description %}
+                <h5 class="section-title">Описание</h5>
+                <p class="text-muted">{{ task.description|linebreaksbr }}</p>
+            {% else %}
+                <p class="text-muted fst-italic mt-3">Без описания</p>
+            {% endif %}
+
+            <div class="task-meta">
+                <span>
+                    <i class="bi bi-person-check"></i>
+                    <strong>Исполнитель:</strong>
+                    {% if task.assignee %}
+                        {{ task.assignee.get_full_name|default:task.assignee.username }}
+                    {% else %}
+                        <span class="text-muted">не назначен</span>
+                    {% endif %}
+                </span>
+                <span>
+                    <i class="bi bi-person"></i>
+                    <strong>Автор:</strong>
+                    {{ task.reporter.get_full_name|default:task.reporter.username }}
+                </span>
+                <span>
+                    <i class="bi bi-calendar-event"></i>
+                    <strong>Срок:</strong>
+                    {% if task.due_date %}
+                        {{ task.due_date|date:"d.m.Y" }}
+                    {% else %}
+                        <span class="text-muted">не указан</span>
+                    {% endif %}
+                </span>
+                <span>
+                    <i class="bi bi-folder"></i>
+                    <strong>Проект:</strong>
+                    {{ task.project.name }}
+                </span>
+            </div>
+        </div>
+
+        <!-- Блок комментариев -->
+        <div class="card-detail">
+            <h5 class="fw-light mb-3"><i class="bi bi-chat-left-text me-2" style="color: var(--nude-accent);"></i>Комментарии</h5>
+
+            {% for comment in comments %}
+                <div class="comment">
+                    <div class="comment-header">
+                        <i class="bi bi-person-circle"></i>
+                        <strong>{{ comment.user.get_full_name|default:comment.user.username }}</strong>
+                        <span class="ms-2">{{ comment.created_at|date:"d.m.Y H:i" }}</span>
+                    </div>
+                    <div class="comment-body">{{ comment.text|linebreaksbr }}</div>
+                </div>
+            {% empty %}
+                <p class="text-muted fst-italic">Нет комментариев</p>
+            {% endfor %}
+
+            <!-- Форма добавления комментария -->
+            <form method="post" class="comment-form mt-4">
+                {% csrf_token %}
+                <div class="mb-2">
+                    {{ comment_form.text }}
+                    {% if comment_form.text.errors %}
+                        <div class="text-danger small">{{ comment_form.text.errors }}</div>
+                    {% endif %}
+                </div>
+                <button type="submit" class="btn-comment">
+                    <i class="bi bi-send me-1"></i> Отправить
+                </button>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

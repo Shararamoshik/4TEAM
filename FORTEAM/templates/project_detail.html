@@ -1,0 +1,377 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ project.name }} – 4TEAM{% endblock %}
+
+{% block extra_head %}
+<style>
+    .project-header {
+        background: var(--nude-surface);
+        border: 1px solid var(--nude-border);
+        border-radius: 16px;
+        padding: 1.5rem 2rem;
+        margin-bottom: 2rem;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 1rem;
+    }
+    .project-info h2 {
+        font-weight: 300;
+        margin-bottom: 0.25rem;
+    }
+    .project-meta {
+        font-size: 0.9rem;
+        color: var(--nude-muted);
+    }
+    .btn-create-task {
+        background: var(--nude-accent);
+        color: #fff;
+        border: none;
+        border-radius: 50px;
+        padding: 0.5rem 1.5rem;
+        text-decoration: none;
+        transition: background 0.2s;
+        font-size: 0.9rem;
+    }
+    .btn-create-task:hover {
+        background: var(--nude-accent-hover);
+        color: #fff;
+    }
+    .kanban-grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 1.5rem;
+    }
+    .kanban-column {
+        background: var(--nude-soft);
+        border-radius: 16px;
+        padding: 1rem;
+        min-height: 400px;
+    }
+    .kanban-column-title {
+        font-weight: 500;
+        font-size: 1.1rem;
+        margin-bottom: 1rem;
+        text-align: center;
+        color: var(--nude-text);
+        padding-bottom: 0.5rem;
+        border-bottom: 1px solid var(--nude-border);
+    }
+    .task-card {
+        background: var(--nude-surface);
+        border: 1px solid var(--nude-border);
+        border-radius: 12px;
+        padding: 1rem;
+        margin-bottom: 0.8rem;
+        transition: all 0.2s;
+        position: relative;
+    }
+    .task-card:hover {
+        border-color: var(--nude-accent);
+        box-shadow: 0 2px 8px rgba(0,0,0,0.03);
+    }
+    .task-title {
+        font-weight: 500;
+        margin-bottom: 0.4rem;
+        color: var(--nude-text);
+    }
+    .task-card .btn-link {
+        color: var(--nude-muted);
+        padding: 0;
+        line-height: 1;
+        font-size: 1.2rem;
+    }
+    .task-card .btn-link:hover {
+        color: var(--nude-accent);
+    }
+    .task-priority {
+        display: inline-block;
+        font-size: 0.75rem;
+        border-radius: 20px;
+        padding: 0.2em 0.7em;
+        margin-right: 0.5rem;
+        font-weight: 500;
+    }
+    .priority-low { background: #e8e4df; color: #5e5a55; }
+    .priority-medium { background: #dfd2be; color: #5e4d3a; }
+    .priority-high { background: #e0c4c4; color: #6b4242; }
+    .priority-critical { background: #e2b5b5; color: #6b2c2c; }
+    .task-meta {
+        font-size: 0.8rem;
+        color: var(--nude-muted);
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        margin-top: 0.4rem;
+    }
+    .no-tasks {
+        color: var(--nude-muted);
+        font-style: italic;
+        text-align: center;
+        padding: 1.5rem;
+        font-size: 0.9rem;
+    }
+    .dropdown-menu {
+        min-width: auto;
+        font-size: 0.85rem;
+    }
+    .dropdown-item {
+        padding: 0.4rem 1rem;
+    }
+    @media (max-width: 768px) {
+        .kanban-grid {
+            grid-template-columns: 1fr;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <!-- Заголовок проекта -->
+    <div class="project-header">
+        <div class="project-info">
+            <h2><i class="bi bi-folder2-open me-2" style="color: var(--nude-accent);"></i>{{ project.name }}</h2>
+            <div class="project-meta">
+                {% if project.description %}
+                    <span class="me-3">{{ project.description }}</span>
+                {% endif %}
+                <span><i class="bi bi-person me-1"></i>{{ project.created_by.get_full_name|default:project.created_by.username }}</span>
+                <span class="ms-3"><i class="bi bi-calendar3 me-1"></i>{{ project.created_at|date:"d.m.Y" }}</span>
+                <span class="ms-3"><i class="bi bi-list-check me-1"></i>{{ todo_tasks|length|add:in_progress_tasks|length|add:done_tasks|length }} задач</span>
+            </div>
+        </div>
+        {% if is_admin %}
+            <div class="d-flex gap-2">
+                <a href="{% url 'invite_create' %}" class="btn btn-nude-outline">
+                    <i class="bi bi-link-45deg"></i> Пригласить
+                </a>
+                <a href="{% url 'manage_members' project.pk %}" class="btn btn-nude-outline btn-sm">
+                    <i class="bi bi-people me-1"></i> Участники
+                </a>
+                <a href="{% url 'task_create' project.pk %}" class="btn-create-task">
+                    <i class="bi bi-plus-circle me-1"></i> Создать задачу
+                </a>
+            </div>
+        {% endif %}
+    </div>
+
+    <!-- Канбан-доска -->
+    <div class="kanban-grid">
+        <!-- Колонка To Do -->
+        <div class="kanban-column">
+            <h5 class="kanban-column-title"><i class="bi bi-circle me-1"></i> To Do</h5>
+            {% for task in todo_tasks %}
+                <div class="task-card">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <a href="{% url 'task_detail' task.pk %}" class="text-decoration-none flex-grow-1">
+                            <div class="task-title">{{ task.title }}</div>
+                        </a>
+                        <div class="dropdown">
+                            <button class="btn btn-sm btn-link p-0 border-0" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                <i class="bi bi-three-dots-vertical"></i>
+                            </button>
+                            <ul class="dropdown-menu dropdown-menu-end shadow-sm">
+                                {% if task.status != 'IN_PROGRESS' %}
+                                <li>
+                                    <form method="post" action="{% url 'task_change_status' task.pk %}">
+                                        {% csrf_token %}
+                                        <input type="hidden" name="new_status" value="IN_PROGRESS">
+                                        <button type="submit" class="dropdown-item">В работу</button>
+                                    </form>
+                                </li>
+                                {% endif %}
+                                {% if task.status != 'DONE' %}
+                                <li>
+                                    <form method="post" action="{% url 'task_change_status' task.pk %}">
+                                        {% csrf_token %}
+                                        <input type="hidden" name="new_status" value="DONE">
+                                        <button type="submit" class="dropdown-item">Готово</button>
+                                    </form>
+                                </li>
+                                {% endif %}
+                                {% if task.status != 'TODO' %}
+                                <li>
+                                    <form method="post" action="{% url 'task_change_status' task.pk %}">
+                                        {% csrf_token %}
+                                        <input type="hidden" name="new_status" value="TODO">
+                                        <button type="submit" class="dropdown-item">Вернуть в To Do</button>
+                                    </form>
+                                </li>
+                                {% endif %}
+                            </ul>
+                        </div>
+                    </div>
+                    <div>
+                        <span class="task-priority
+                            {% if task.priority == 'LOW' %}priority-low
+                            {% elif task.priority == 'MEDIUM' %}priority-medium
+                            {% elif task.priority == 'HIGH' %}priority-high
+                            {% elif task.priority == 'CRITICAL' %}priority-critical
+                            {% endif %}">
+                            {{ task.get_priority_display }}
+                        </span>
+                    </div>
+                    <div class="task-meta">
+                        <i class="bi bi-person-circle"></i>
+                        {% if task.assignee %}
+                            {{ task.assignee.get_full_name|default:task.assignee.username }}
+                        {% else %}
+                            <span class="text-muted">Не назначен</span>
+                        {% endif %}
+                        {% if task.due_date %}
+                            <span class="ms-2"><i class="bi bi-clock"></i> {{ task.due_date|date:"d.m.Y" }}</span>
+                        {% endif %}
+                    </div>
+                </div>
+            {% empty %}
+                <div class="no-tasks">Нет задач</div>
+            {% endfor %}
+        </div>
+
+        <!-- Колонка In Progress -->
+        <div class="kanban-column">
+            <h5 class="kanban-column-title"><i class="bi bi-arrow-repeat me-1"></i> In Progress</h5>
+            {% for task in in_progress_tasks %}
+                <div class="task-card">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <a href="{% url 'task_detail' task.pk %}" class="text-decoration-none flex-grow-1">
+                            <div class="task-title">{{ task.title }}</div>
+                        </a>
+                        <div class="dropdown">
+                            <button class="btn btn-sm btn-link p-0 border-0" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                <i class="bi bi-three-dots-vertical"></i>
+                            </button>
+                            <ul class="dropdown-menu dropdown-menu-end shadow-sm">
+                                {% if task.status != 'TODO' %}
+                                <li>
+                                    <form method="post" action="{% url 'task_change_status' task.pk %}">
+                                        {% csrf_token %}
+                                        <input type="hidden" name="new_status" value="TODO">
+                                        <button type="submit" class="dropdown-item">To Do</button>
+                                    </form>
+                                </li>
+                                {% endif %}
+                                {% if task.status != 'DONE' %}
+                                <li>
+                                    <form method="post" action="{% url 'task_change_status' task.pk %}">
+                                        {% csrf_token %}
+                                        <input type="hidden" name="new_status" value="DONE">
+                                        <button type="submit" class="dropdown-item">Готово</button>
+                                    </form>
+                                </li>
+                                {% endif %}
+                                {% if task.status != 'IN_PROGRESS' %}
+                                <li>
+                                    <form method="post" action="{% url 'task_change_status' task.pk %}">
+                                        {% csrf_token %}
+                                        <input type="hidden" name="new_status" value="IN_PROGRESS">
+                                        <button type="submit" class="dropdown-item">Вернуть в работу</button>
+                                    </form>
+                                </li>
+                                {% endif %}
+                            </ul>
+                        </div>
+                    </div>
+                    <div>
+                        <span class="task-priority
+                            {% if task.priority == 'LOW' %}priority-low
+                            {% elif task.priority == 'MEDIUM' %}priority-medium
+                            {% elif task.priority == 'HIGH' %}priority-high
+                            {% elif task.priority == 'CRITICAL' %}priority-critical
+                            {% endif %}">
+                            {{ task.get_priority_display }}
+                        </span>
+                    </div>
+                    <div class="task-meta">
+                        <i class="bi bi-person-circle"></i>
+                        {% if task.assignee %}
+                            {{ task.assignee.get_full_name|default:task.assignee.username }}
+                        {% else %}
+                            <span class="text-muted">Не назначен</span>
+                        {% endif %}
+                        {% if task.due_date %}
+                            <span class="ms-2"><i class="bi bi-clock"></i> {{ task.due_date|date:"d.m.Y" }}</span>
+                        {% endif %}
+                    </div>
+                </div>
+            {% empty %}
+                <div class="no-tasks">Нет задач</div>
+            {% endfor %}
+        </div>
+
+        <!-- Колонка Done -->
+        <div class="kanban-column">
+            <h5 class="kanban-column-title"><i class="bi bi-check-circle me-1"></i> Done</h5>
+            {% for task in done_tasks %}
+                <div class="task-card">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <a href="{% url 'task_detail' task.pk %}" class="text-decoration-none flex-grow-1">
+                            <div class="task-title">{{ task.title }}</div>
+                        </a>
+                        <div class="dropdown">
+                            <button class="btn btn-sm btn-link p-0 border-0" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                <i class="bi bi-three-dots-vertical"></i>
+                            </button>
+                            <ul class="dropdown-menu dropdown-menu-end shadow-sm">
+                                {% if task.status != 'TODO' %}
+                                <li>
+                                    <form method="post" action="{% url 'task_change_status' task.pk %}">
+                                        {% csrf_token %}
+                                        <input type="hidden" name="new_status" value="TODO">
+                                        <button type="submit" class="dropdown-item">To Do</button>
+                                    </form>
+                                </li>
+                                {% endif %}
+                                {% if task.status != 'IN_PROGRESS' %}
+                                <li>
+                                    <form method="post" action="{% url 'task_change_status' task.pk %}">
+                                        {% csrf_token %}
+                                        <input type="hidden" name="new_status" value="IN_PROGRESS">
+                                        <button type="submit" class="dropdown-item">В работу</button>
+                                    </form>
+                                </li>
+                                {% endif %}
+                                {% if task.status != 'DONE' %}
+                                <li>
+                                    <form method="post" action="{% url 'task_change_status' task.pk %}">
+                                        {% csrf_token %}
+                                        <input type="hidden" name="new_status" value="DONE">
+                                        <button type="submit" class="dropdown-item">Вернуть в готово</button>
+                                    </form>
+                                </li>
+                                {% endif %}
+                            </ul>
+                        </div>
+                    </div>
+                    <div>
+                        <span class="task-priority 
+                            {% if task.priority == 'LOW' %}priority-low
+                            {% elif task.priority == 'MEDIUM' %}priority-medium
+                            {% elif task.priority == 'HIGH' %}priority-high
+                            {% elif task.priority == 'CRITICAL' %}priority-critical
+                            {% endif %}">
+                            {{ task.get_priority_display }}
+                        </span>
+                    </div>
+                    <div class="task-meta">
+                        <i class="bi bi-person-circle"></i>
+                        {% if task.assignee %}
+                            {{ task.assignee.get_full_name|default:task.assignee.username }}
+                        {% else %}
+                            <span class="text-muted">Не назначен</span>
+                        {% endif %}
+                        {% if task.due_date %}
+                            <span class="ms-2"><i class="bi bi-clock"></i> {{ task.due_date|date:"d.m.Y" }}</span>
+                        {% endif %}
+                    </div>
+                </div>
+            {% empty %}
+                <div class="no-tasks">Нет задач</div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,186 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Профиль – 4TEAM{% endblock %}
+
+{% block extra_head %}
+<style>
+    .profile-wrapper {
+        max-width: 700px;
+        margin: 2rem auto;
+    }
+    .profile-card {
+        background: var(--nude-surface);
+        border: 1px solid var(--nude-border);
+        border-radius: 16px;
+        padding: 2.5rem 2rem;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.02);
+    }
+    .profile-card .form-control {
+        border: 1px solid var(--nude-border);
+        border-radius: 10px;
+        padding: 0.75rem 1rem;
+        background: #fff;
+        transition: border-color 0.2s;
+    }
+    .profile-card .form-control:focus {
+        border-color: var(--nude-accent);
+        box-shadow: 0 0 0 0.15rem rgba(194, 165, 165, 0.25);
+    }
+    .profile-card .form-label {
+        font-weight: 500;
+        color: var(--nude-text);
+        margin-bottom: 0.3rem;
+    }
+    .current-avatar {
+        width: 100px;
+        height: 100px;
+        object-fit: cover;
+        border-radius: 50%;
+        border: 2px solid var(--nude-border);
+    }
+    .avatar-placeholder-lg {
+        width: 100px;
+        height: 100px;
+        border-radius: 50%;
+        background: var(--nude-soft);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: var(--nude-accent);
+        font-size: 2.5rem;
+    }
+    .section-title {
+        font-weight: 300;
+        color: var(--nude-accent);
+        border-bottom: 1px solid var(--nude-border);
+        padding-bottom: 0.5rem;
+        margin-bottom: 1.5rem;
+    }
+    .btn-outline-change-password {
+        color: var(--nude-accent);
+        border: 1px solid var(--nude-accent);
+        border-radius: 50px;
+        padding: 0.3rem 1.2rem;
+        text-decoration: none;
+        font-size: 0.9rem;
+        transition: all 0.2s;
+    }
+    .btn-outline-change-password:hover {
+        background: var(--nude-accent);
+        color: #fff;
+    }
+    .errorlist {
+        list-style: none;
+        padding: 0;
+        color: #b76262;
+        font-size: 0.9rem;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="profile-wrapper">
+        <div class="profile-card">
+            <div class="text-center mb-4">
+                {% if profile_form.instance.avatar %}
+                    <img src="{{ profile_form.instance.avatar.url }}" alt="Аватар" class="current-avatar mb-3">
+                {% else %}
+                    <div class="avatar-placeholder-lg mx-auto mb-3">
+                        <i class="bi bi-person"></i>
+                    </div>
+                {% endif %}
+                <h2 class="fw-light">{{ request.user.get_full_name|default:request.user.username }}</h2>
+                <p class="text-muted">{{ profile_form.instance.job_title|default:"Должность не указана" }}</p>
+            </div>
+
+            <form method="post" enctype="multipart/form-data" novalidate>
+                {% csrf_token %}
+
+                <!-- Секция: Имя и фамилия -->
+                <h5 class="section-title">Основное</h5>
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label for="{{ user_form.first_name.id_for_label }}" class="form-label">{{ user_form.first_name.label }}</label>
+                        {{ user_form.first_name }}
+                        {% if user_form.first_name.errors %}
+                            <ul class="errorlist">
+                                {% for error in user_form.first_name.errors %}
+                                    <li>{{ error }}</li>
+                                {% endfor %}
+                            </ul>
+                        {% endif %}
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label for="{{ user_form.last_name.id_for_label }}" class="form-label">{{ user_form.last_name.label }}</label>
+                        {{ user_form.last_name }}
+                        {% if user_form.last_name.errors %}
+                            <ul class="errorlist">
+                                {% for error in user_form.last_name.errors %}
+                                    <li>{{ error }}</li>
+                                {% endfor %}
+                            </ul>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- Секция: Профиль -->
+                <h5 class="section-title mt-3">Профиль</h5>
+
+                <div class="mb-3">
+                    <label for="{{ profile_form.job_title.id_for_label }}" class="form-label">{{ profile_form.job_title.label }}</label>
+                    {{ profile_form.job_title }}
+                    {% if profile_form.job_title.errors %}
+                        <ul class="errorlist">
+                            {% for error in profile_form.job_title.errors %}
+                                <li>{{ error }}</li>
+                            {% endfor %}
+                        </ul>
+                    {% endif %}
+                </div>
+
+                <div class="mb-3">
+                    <label for="{{ profile_form.description.id_for_label }}" class="form-label">{{ profile_form.description.label }}</label>
+                    {{ profile_form.description }}
+                    {% if profile_form.description.errors %}
+                        <ul class="errorlist">
+                            {% for error in profile_form.description.errors %}
+                                <li>{{ error }}</li>
+                            {% endfor %}
+                        </ul>
+                    {% endif %}
+                </div>
+
+                <div class="mb-3">
+                    <label for="{{ profile_form.telegram_id.id_for_label }}" class="form-label">{{ profile_form.telegram_id.label }}</label>
+                    {{ profile_form.telegram_id }}
+                    {% if profile_form.telegram_id.errors %}
+                        <ul class="errorlist">
+                            {% for error in profile_form.telegram_id.errors %}
+                                <li>{{ error }}</li>
+                            {% endfor %}
+                        </ul>
+                    {% endif %}
+                </div>
+
+                <div class="mb-3">
+                    <label for="{{ profile_form.avatar.id_for_label }}" class="form-label">{{ profile_form.avatar.label }}</label>
+                    {{ profile_form.avatar }}
+                    {% if profile_form.avatar.errors %}
+                        <ul class="errorlist">
+                            {% for error in profile_form.avatar.errors %}
+                                <li>{{ error }}</li>
+                            {% endfor %}
+                        </ul>
+                    {% endif %}
+                </div>
+
+                <button type="submit" class="btn btn-nude-solid w-100 mt-3">
+                    <i class="bi bi-check2-circle me-1"></i> Сохранить изменения
+                </button>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

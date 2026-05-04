@@ -1,0 +1,102 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Пригласить – 4TEAM{% endblock %}
+
+{% block extra_head %}
+<style>
+    .invite-wrapper {
+        max-width: 560px;
+        margin: 2rem auto;
+    }
+    .card-invite {
+        background: var(--nude-surface);
+        border: 1px solid var(--nude-border);
+        border-radius: 16px;
+        padding: 2.5rem 2rem;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.02);
+    }
+    .card-invite .form-control,
+    .card-invite .form-select {
+        border: 1px solid var(--nude-border);
+        border-radius: 10px;
+        padding: 0.75rem 1rem;
+        background: #fff;
+        transition: border-color 0.2s;
+    }
+    .card-invite .form-control:focus,
+    .card-invite .form-select:focus {
+        border-color: var(--nude-accent);
+        box-shadow: 0 0 0 0.15rem rgba(194, 165, 165, 0.25);
+    }
+    .link-box {
+        background: var(--nude-soft);
+        border-radius: 10px;
+        padding: 0.75rem 1rem;
+        word-break: break-all;
+        font-size: 0.9rem;
+        color: var(--nude-text);
+    }
+    .errorlist {
+        list-style: none;
+        padding: 0;
+        color: #b76262;
+        font-size: 0.9rem;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="invite-wrapper">
+        <div class="card-invite">
+            <div class="text-center mb-4">
+                <i class="bi bi-person-plus display-5" style="color: var(--nude-accent);"></i>
+                <h2 class="fw-light mt-2">Пригласить в проект</h2>
+                <p class="text-muted small">Создайте одноразовую ссылку для участников</p>
+            </div>
+
+            <form method="post" novalidate>
+                {% csrf_token %}
+
+                <div class="mb-3">
+                    <label for="{{ form.project.id_for_label }}" class="form-label">{{ form.project.label }}</label>
+                    {{ form.project }}
+                    {% if form.project.errors %}
+                        <ul class="errorlist">
+                            {% for error in form.project.errors %}
+                                <li>{{ error }}</li>
+                            {% endfor %}
+                        </ul>
+                    {% endif %}
+                </div>
+
+                <button type="submit" class="btn btn-nude-solid w-100 mt-3">
+                    <i class="bi bi-link-45deg me-1"></i> Создать ссылку
+                </button>
+            </form>
+
+            {% if invite_url %}
+                <div class="mt-4">
+                    <h5 class="fw-light">Скопируйте ссылку:</h5>
+                    <div class="link-box" id="inviteLink">{{ invite_url }}</div>
+                    <button class="btn btn-nude-outline btn-sm mt-2" onclick="copyInviteLink()">
+                        <i class="bi bi-clipboard me-1"></i> Копировать
+                    </button>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+{% if invite_url %}
+<script>
+    function copyInviteLink() {
+        const link = document.getElementById('inviteLink').innerText;
+        navigator.clipboard.writeText(link).then(() => {
+            alert('Ссылка скопирована!');
+        });
+    }
+</script>
+{% endif %}
+{% endblock %}

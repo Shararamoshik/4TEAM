@@ -1,0 +1,144 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Регистрация – 4TEAM{% endblock %}
+
+{% block extra_head %}
+<style>
+    .register-wrapper {
+        max-width: 520px;
+        margin: 3rem auto;
+    }
+    .register-card {
+        background: var(--nude-surface);
+        border: 1px solid var(--nude-border);
+        border-radius: 16px;
+        padding: 2.5rem 2rem;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.02);
+    }
+    .register-card .form-control {
+        border: 1px solid var(--nude-border);
+        border-radius: 10px;
+        padding: 0.75rem 1rem;
+        background: #fff;
+        transition: border-color 0.2s;
+    }
+    .register-card .form-control:focus {
+        border-color: var(--nude-accent);
+        box-shadow: 0 0 0 0.15rem rgba(194, 165, 165, 0.25);
+    }
+    .register-card .form-label {
+        font-weight: 500;
+        color: var(--nude-text);
+        margin-bottom: 0.3rem;
+    }
+    .auth-link {
+        color: var(--nude-accent);
+        text-decoration: none;
+        font-weight: 500;
+    }
+    .auth-link:hover {
+        color: var(--nude-accent-hover);
+        text-decoration: underline;
+    }
+    .errorlist {
+        list-style: none;
+        padding: 0;
+        color: #b76262;
+        font-size: 0.9rem;
+        margin-bottom: 0.5rem;
+    }
+    .help-text {
+        font-size: 0.8rem;
+        color: var(--nude-muted);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="register-wrapper">
+        <div class="register-card">
+            <div class="text-center mb-4">
+                <i class="bi bi-person-plus-fill display-5" style="color: var(--nude-accent);"></i>
+                <h2 class="fw-light mt-2">Присоединиться</h2>
+                <p class="text-muted small">Создайте аккаунт 4TEAM за минуту</p>
+            </div>
+
+            <form method="post" novalidate>
+                {% csrf_token %}
+
+                {% if form.non_field_errors %}
+                    <div class="alert alert-danger py-2">
+                        {% for error in form.non_field_errors %}
+                            {{ error }}
+                        {% endfor %}
+                    </div>
+                {% endif %}
+
+                <div class="mb-3">
+                    <label for="{{ form.username.id_for_label }}" class="form-label">Логин</label>
+                    {{ form.username }}
+                    {% if form.username.errors %}
+                        <ul class="errorlist">
+                            {% for error in form.username.errors %}
+                                <li>{{ error }}</li>
+                            {% endfor %}
+                        </ul>
+                    {% endif %}
+                    {% if form.username.help_text %}
+                        <div class="help-text">{{ form.username.help_text }}</div>
+                    {% endif %}
+                </div>
+
+                <div class="mb-3">
+                    <label for="{{ form.email.id_for_label }}" class="form-label">Email</label>
+                    {{ form.email }}
+                    {% if form.email.errors %}
+                        <ul class="errorlist">
+                            {% for error in form.email.errors %}
+                                <li>{{ error }}</li>
+                            {% endfor %}
+                        </ul>
+                    {% endif %}
+                </div>
+
+                <div class="mb-3">
+                    <label for="{{ form.password1.id_for_label }}" class="form-label">Пароль</label>
+                    {{ form.password1 }}
+                    {% if form.password1.errors %}
+                        <ul class="errorlist">
+                            {% for error in form.password1.errors %}
+                                <li>{{ error }}</li>
+                            {% endfor %}
+                        </ul>
+                    {% endif %}
+                    {% if form.password1.help_text %}
+                        <div class="help-text">{{ form.password1.help_text }}</div>
+                    {% endif %}
+                </div>
+
+                <div class="mb-3">
+                    <label for="{{ form.password2.id_for_label }}" class="form-label">Подтверждение пароля</label>
+                    {{ form.password2 }}
+                    {% if form.password2.errors %}
+                        <ul class="errorlist">
+                            {% for error in form.password2.errors %}
+                                <li>{{ error }}</li>
+                            {% endfor %}
+                        </ul>
+                    {% endif %}
+                </div>
+
+                <button type="submit" class="btn btn-nude-solid w-100 mt-3">
+                    <i class="bi bi-person-check-fill me-1"></i> Зарегистрироваться
+                </button>
+            </form>
+
+            <p class="text-center mt-3 mb-0 small text-muted">
+                Уже есть аккаунт? <a href="{% url 'login' %}" class="auth-link">Войти</a>
+            </p>
+        </div>
+    </div>
+</div>
+{% endblock %}
