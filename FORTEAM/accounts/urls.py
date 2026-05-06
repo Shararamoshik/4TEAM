@@ -13,6 +13,7 @@ urlpatterns = [
          auth_views.LogoutView.as_view(next_page='/'),
          name='logout'),
     path('register/', views.register_view, name='register'),
+    path('verify-email/<uuid:token>/', views.verify_email, name='verify_email'),
 
     path('accounts/profile/', views.profile_view, name='profile'),
 ]

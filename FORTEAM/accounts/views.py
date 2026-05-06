@@ -1,12 +1,14 @@
-from django.shortcuts import render, redirect
+from django.shortcuts import render, redirect, get_object_or_404
 from .forms import CustomUserCreationForm, UserEditForm, ProfileEditForm
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth import login, authenticate
 from django.db.models import Q
+from django.urls import reverse
 from tasks.models import Task
 from projects.models import Project, Permission
-from .models import Profile
+from .models import Profile, EmailVerificationToken
 from django.contrib import messages
+from django.core.mail import send_mail
 
 
 def home(request):
@@ -49,16 +51,47 @@ def home(request):
 def register_view(request):
     if request.user.is_authenticated:
         return redirect('home')
+
     if request.method == 'POST':
         form = CustomUserCreationForm(request.POST)
         if form.is_valid():
-            user = form.save()
-            # Автоматически авторизуем после регистрации
-            login(request, user)
-            # Перенаправление на главную или куда нужно
-            return redirect('home')
+            # Создаём неактивного пользователя
+            user = form.save(commit=False)
+            user.is_active = False
+            user.save()
+
+            # Генерируем токен подтверждения
+            token = EmailVerificationToken.objects.create(user=user)
+
+            # Формируем ссылку для подтверждения
+            verification_url = request.build_absolute_uri(
+                reverse('verify_email', args=[token.token])
+            )
+            print(f"\n=== ССЫЛКА ДЛЯ ПОДТВЕРЖДЕНИЯ ===\n{verification_url}\n=============================\n")
+            # Отправляем письмо (попадёт в консоль)
+            send_mail(
+                subject='4TEAM – Подтверждение регистрации',
+                message=(
+                    f'Здравствуйте, {user.username}!\n\n'
+                    f'Перейдите по ссылке, чтобы активировать аккаунт:\n'
+                    f'{verification_url}\n\n'
+                    f'Если вы не регистрировались, просто проигнорируйте это письмо.'
+                ),
+                from_email='noreply@4team.local',
+                recipient_list=[user.email],
+                fail_silently=False,
+            )
+
+            messages.info(
+                request,
+                'Регистрация почти завершена! '
+                'Проверьте консоль сервера (или вашу почту, если настроена отправка) '
+                'и перейдите по ссылке для активации.'
+            )
+            return redirect('login')
     else:
         form = CustomUserCreationForm()
+
     return render(request, 'register.html', {'form': form})
 
 @login_required
@@ -84,3 +117,18 @@ def profile_view(request):
         'profile_form': profile_form,
     }
     return render(request, 'profile.html', context)
+
+def verify_email(request, token):
+    verification = get_object_or_404(EmailVerificationToken, token=token)
+    user = verification.user
+
+    if user.is_active:
+        messages.warning(request, 'Аккаунт уже активирован.')
+    else:
+        user.is_active = True
+        user.save()
+        messages.success(request, 'Email подтверждён! Теперь вы можете войти.')
+
+    # Удаляем использованный токен
+    verification.delete()
+    return redirect('home')

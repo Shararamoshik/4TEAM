@@ -5,21 +5,51 @@ from tasks.models import Task
 from .forms import ProjectForm, InviteForm
 from django.contrib import messages
 from django.http import Http404, HttpResponseForbidden
+from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
+from django.db.models import Q
 
-# Create your views here.
 @login_required
 def project_list(request):
     user = request.user
-    # Все активные проекты пользователя
+
+    if 'q' in request.GET:
+        search_query = request.GET.get('q', '').strip()
+        if search_query == '':
+            request.session['reset'] = True  # пометка для удаления cookie позже
+    else:
+        search_query = request.COOKIES.get('project_search', '').strip()
+
     projects = Project.objects.filter(
         permissions__user=user,
         is_active=True
     ).distinct().order_by('-created_at')
 
+    if search_query:
+        projects = projects.filter(
+            Q(name__icontains=search_query) | Q(description__icontains=search_query)
+        )
+
+    paginator = Paginator(projects, 9)
+    page_number = request.GET.get('page', 1)
+    try:
+        page_projects = paginator.page(page_number)
+    except (PageNotAnInteger, EmptyPage):
+        page_projects = paginator.page(1)
+
     context = {
-        'projects': projects,
+        'projects': page_projects,
+        'search_query': search_query,
     }
-    return render(request, 'project_list.html', context)
+
+    response = render(request, 'project_list.html', context)
+
+    if 'q' in request.GET and search_query == '':
+        response.delete_cookie('project_search')
+    elif search_query:
+        response.set_cookie('project_search', search_query, max_age=30*24*3600)
+
+    return response
+
 
 
 @login_required
